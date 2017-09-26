@@ -88,7 +88,7 @@ def calAng(dates, values):
     #While there is a maximum left
     while len(k_points) > 3:
         idx, minima = extrema(k, "max_k")
-        #When the program is done we need the most defining points 
+        #When the function is done we need the most defining points 
         if len(idx) < 3:
             k_points = [dir_points[0], dir_points[-1]]
             k_dates = [dir_dates[0], dir_dates[-1]]
@@ -100,11 +100,12 @@ def calAng(dates, values):
     print("Defining points done!")
     return k_dates, k_points, k[0]
 
-def angle(values, angle_type):
+def angle(dates, values, angle_type):
     """
     This function will calculate the most defining points and calculate the k-value between them.
     INPUT
-        values -        a [n x 1] list containing the values used for analasys,
+        dates -         a [n x 1] list containing the dates used for analysis
+        values -        a [n x 1] list containing the values used for analysis
                         could be close, obv etc.
         angle_type -    a "str" defining what type of angle the function should look for, on top
                         of the graph or below. 
@@ -115,40 +116,36 @@ def angle(values, angle_type):
     """
     
     print("Angels running...")
-    if angle_type == "min":
-        min_days = []
-        min_idx, minimas = extrema([row[1] for row in values], "min")
-        for i in range(len(min_idx)):
-            min_days.append(values[min_idx[i]][0])
-        def_dates, def_point, k = calAng(min_days, minimas)
-    if angle_type == "max":
-        max_days = []
-        max_idx, maximas = extrema([row[1] for row in values], "max")
-        for i in range(len(max_idx)):
-            max_days.append(values[max_idx[i]][0])
-        def_dates, def_point, k = calAng(max_days, maximas)
+    exa_days = []
+    exa_idx, extms = extrema(values, angle_type)
+    for i in range(len(exa_idx)):
+        exa_days.append(dates[exa_idx[i]])
+    def_dates, def_point, k = calAng(exa_days, extms)
     print("Angles done!")
     return def_dates, def_point, k
 
-def calcOBV(f):
+def calcobv(f):
     """
-    Creates a list of all the OBV values for the stock in f.
+    Creates a list of all the obv values for the stock in f.
     INPUT
         f - the pandas object of the current stock
     OUTPUT
-        OBV - a [n x n] list [date, obv] of the obv values and the corresponding dates
+        obv - a [n x n] list [date, obv] of the obv values and the corresponding dates
     """
-    print("OBV running...")
-    OBV = [[f.ix[1].name.date(), f['Volume'][1]]]
+    print("obv running...")
+    obv = [f['Volume'][1]]
+    dates = [f.ix[1].name.date()]
 
     for i,j in enumerate(f['Close']):
         if i > 0:
             if j > f['Close'][i-1]:
-                OBV.append([f.ix[i].name.date(), (f['Volume'][i] + OBV[-1][1])])
+                dates.append(f.ix[i].name.date())
+                obv.append(f['Volume'][i] + obv[-1])
             else:
-                OBV.append([f.ix[i].name.date(), -f['Volume'][i] + OBV[-1][1]])
-    print("OBV done!")
-    return OBV
+                dates.append(f.ix[i].name.date())
+                obv.append(-f['Volume'][i] + obv[-1])
+    print("obv done!")
+    return dates, obv
 
 def close_lst(f):
     """
@@ -160,10 +157,12 @@ def close_lst(f):
     """
     print("Closing price running...")
     close_price = []
+    dates = []
     for i,j in enumerate(f['Close']):
-        close_price.append([f.ix[i].name.date(), f['Close'][i]])
+        close_price.append(f['Close'][i])
+        dates.append(f.ix[i].name.date())
     print("Closing price done!")
-    return close_price
+    return dates, close_price
 
 def trend_indicator(k, point, date, clos): 
     """
@@ -192,9 +191,9 @@ start = end - dt.timedelta(days=183)
 
 f = web.DataReader("ABB.ST", 'yahoo', start, end)
 
-obv = calcOBV(f)
-close = close_lst(f)
-def_dates, def_point, k = angle(close, "max")
+dates, obv = calcobv(f)
+dates, close = close_lst(f)
+def_dates, def_point, k = angle(dates, close, "max")
 indicator = trend_indicator(k, def_point[-1], def_dates[-1], f)
 
 print("done!")
