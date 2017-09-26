@@ -50,10 +50,16 @@ def extrema(values, ex_type):
                 if j > values[i-1] and j > values[i+1]:
                     exas.append(j)
                     idx.append(i)
-    elif ex_type == "sdl_min":
+    elif ex_type == "min_l":
         for i,j in enumerate(values):
             if i > 0 and i < (len(values)-1):
-                if j < 0 and values[i+1] > 0 :
+                if j < values[i+1]:
+                    exas.append(j)
+                    idx.append(i+1)
+    elif ex_type == "max_k":
+        for i,j in enumerate(values):
+            if i > 0 and i < (len(values)-1):
+                if j > values[i+1]:
                     exas.append(j)
                     idx.append(i+1)
     else:
@@ -69,8 +75,8 @@ def calAng(dates, values):
     print("Calculating the most defing points and angle")
     k, k_dates, k_points = calcDir(dates, values)
     while len(k_points) > 3:
-        idx, minima = extrema(k, "sdl_min")
-        if len(idx) < 2:
+        idx, minima = extrema(k, "max_k")
+        if len(idx) < 3:
             k_points = [dir_points[0], dir_points[-1]]
             k_dates = [dir_dates[0], dir_dates[-1]]
             k, k_d, k_p = calcDir(k_dates, k_points)
@@ -80,6 +86,24 @@ def calAng(dates, values):
         k, k_dates, k_points = calcDir(dir_dates, dir_points)
     print("Def angles and points done!")
     return k_dates, k_points, k[0]
+
+
+def angle(values, angle_type):
+    print("Running show!")
+    if angle_type == "min":
+        min_days = []
+        min_idx, minimas = extrema([row[1] for row in values], "min")
+        for i in range(len(min_idx)):
+            min_days.append(values[min_idx[i]][0])
+        def_dates, def_point, k = calAng(min_days, minimas)
+    if angle_type == "max":
+        max_days = []
+        max_idx, maximas = extrema([row[1] for row in values], "max")
+        for i in range(len(max_idx)):
+            max_days.append(values[max_idx[i]][0])
+        def_dates, def_point, k = calAng(max_days, maximas)
+    print("Show done!")
+    return def_dates, def_point, k
 
 def calcOBV(f):
     print("Calculating OBV")
@@ -101,25 +125,6 @@ def close_lst(f):
         close_price.append([f.ix[i].name.date(), f['Close'][i]])
     print("Closing price done!")
     return close_price
-
-def angle(values, angle_type):
-    print("Running show!")
-    min_days = []
-    max_days = []
-    min_idx, minimas = extrema([row[1] for row in values], "min")
-    max_idx, maximas = extrema([row[1] for row in values], "max")
-    print(minimas)
-    print("show extras done")
-    if angle_type == "min":
-        for i in range(len(min_idx)):
-            min_days.append(values[min_idx[i]][0])
-        def_dates, def_point, k = calAng(min_days, minimas)
-    if angle_type == "max":
-        for i in range(len(max_idx)):
-            max_days.append(values[max_idx[i]][0])
-    print("Show done!")
-    return def_dates, def_point, k
-
 def trend_indicator(k, point, date, f): 
     today = f['Close'][-1]
     elapsed = (dt.date.today() - date).days
@@ -134,11 +139,11 @@ def trend_indicator(k, point, date, f):
 end = dt.date.today()
 start = end - dt.timedelta(days=183)
 
-f = web.DataReader("AAPL", 'yahoo', start, end)
+f = web.DataReader("MOB.ST", 'yahoo', start, end)
 
 obv = calcOBV(f)
 close = close_lst(f)
-def_dates, def_point, k = angle(close, "min")
+def_dates, def_point, k = angle(close, "max")
 indicator = trend_indicator(k, def_point[-1], def_dates[-1], f)
 
 print(indicator)
