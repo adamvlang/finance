@@ -8,17 +8,22 @@ class Stock:
     
     def __init__(self, start, end, symbol, trade):
         self.stock_data = web.DataReader(symbol, 'yahoo', start, end)
+        self.dates = []
         self.type = None
-        setType()
+        self.trade = trade
+        self.setType()
         self.obv_trend = self.calcObv(self.stock_data)
+        self.adl_tren = self.calcAdl()
         
     def setType(self):
-        if trade == "sell":
+        if self.trade == "sell":
             self.type = "min"
-        elif trade == "buy":
+        elif self.trade == "buy":
             self.type = "max"
         else:
             raise NameError("Must by or sell")
+        for i in range(len(self.stock_data['Close'])):
+            self.dates.append(self.stock_data.ix[i].name.date())
 
     def calcDir(self, dates, values):
         """
@@ -212,6 +217,29 @@ class Stock:
         else:
             print("Trend indicator done!")
             return False
+
+    def calcAdl(self):
+        """mfm - money flow measure
+        mfv - money flow volume
+        adl - accumulated distribution line
+        """
+        adl = []
+        for i,j in enumerate(self.stock_data['Close']):
+            #Calculating money flow measure
+            mfm_nom = ((j-self.stock_data['Low'][i])-(self.stock_data['High'][i]))
+            mfm_deno = self.stock_data['High'][i]-self.stock_data['Low'][i]
+            mfm = mfm_nom/mfm_deno
+            #Calculating money flow volume
+            mfv = mfm*self.stock_data['Volume'][i]
+            #Calculating accumulated distributin line
+            if not adl:
+                print(mfm)
+                adl.append(mfv)
+            else:
+                print(adl)
+                adl.append(mfv+adl)
+        def_dates, def_points, k = self.angle(self.dates, adl, self.type) 
+        return k
 
 "Setting up time frame for analysis"
 end = dt.date.today()
